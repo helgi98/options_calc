@@ -1,5 +1,6 @@
 import options as opts
 
+# Task data
 S_end = 100
 t_end = 1
 
@@ -9,10 +10,9 @@ sigma = 0.4
 
 n = 100
 
+# ALl visualization functionality goes here
 S_data = [(S_end / n) * (i + 1) for i in range(n)]
 t_data = [((t_end / n) * i) for i in range(n)]
-
-print(opts.analytic_put_option_price(25, 50, r, sigma, 1, 0))
 
 import numpy as np
 import matplotlib.pyplot as plt
