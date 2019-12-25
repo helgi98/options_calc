@@ -4,7 +4,7 @@ import options as opts
 S_end = 150
 t_end = 1
 
-K = 40
+K = 90
 r = 0
 sigma = 0.5
 
@@ -23,7 +23,7 @@ from mpl_toolkits.mplot3d import Axes3D
 # Need to select Qt5Agg backend before importing plotting functions
 matplotlib.use("Qt5Agg")
 
-print(opts.analytic_call_option_price(40, 40, r, sigma, 1, 0))
+print(opts.binomial_call_option_price_gen(100)(100, 100, 0.1, 0.25, 1, 0))
 
 
 def build_option_surface(fun, S_mesh, t_mesh):
@@ -54,7 +54,7 @@ def build_upper_curve(S_mesh, t_mesh, Lower_value, Value):
 
     def find_min(i):
         j = n - 1
-        while opts.is_almost_zero(Lower_value[i, j] - Value[i, j]) and j >= 0:
+        while j >= 0 and opts.is_almost_zero(Lower_value[i, j] - Value[i, j], 2):
             j -= 1
 
         return j - 1
@@ -78,7 +78,7 @@ def build_lower_curve(S_mesh, t_mesh, Value):
 
     def find_min(i):
         j = 0
-        while opts.is_almost_zero(Value[i, j]) and j < n:
+        while j < n and opts.is_almost_zero(Value[i, j], 2):
             j += 1
 
         return j - 1
@@ -97,7 +97,7 @@ x = np.linspace(-6, 6, 30)
 y = np.linspace(-6, 6, 30)
 
 S_mesh, t_mesh = np.meshgrid(S_data, t_data)
-Values_calc = build_option_surface(opts.monte_carlo_call_option_price, S_mesh, t_mesh)
+Values_calc = build_option_surface(opts.binomial_call_option_price_gen(100), S_mesh, t_mesh)
 Values_lower = build_lower_option_value_surface(opts.lower_call_option_price, S_mesh)
 
 upper_curve = build_upper_curve(S_mesh, t_mesh, Values_lower, Values_calc)
@@ -106,8 +106,8 @@ lower_curve = build_lower_curve(S_mesh, t_mesh, Values_calc)
 fig = plt.figure()
 ax = Axes3D(fig)
 
-# ax.plot(upper_curve[0], upper_curve[1], upper_curve[2], color='red', marker='o')
-# ax.plot(lower_curve[0], lower_curve[1], lower_curve[2], color='red', marker='o')
+ax.plot(upper_curve[0], upper_curve[1], upper_curve[2], color='red', marker='o')
+ax.plot(lower_curve[0], lower_curve[1], lower_curve[2], color='red', marker='o')
 
 ax.plot_surface(S_mesh, t_mesh, Values_calc, rstride=1, cstride=1,
                 color='blue', edgecolor='none', alpha=0.5)

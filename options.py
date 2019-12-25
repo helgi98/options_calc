@@ -11,7 +11,7 @@ def zero_or_max(x):
         return x
 
 
-def is_almost_zero(x, presize=1, proxmity=None):
+def is_almost_zero(x, presize=2, proxmity=None):
     if proxmity:
         return math.fabs(x) < math.fabs(proxmity)
 
@@ -42,22 +42,59 @@ def analytic_put_option_price(S, K, r, sigma, T, t):
     return -S * norm.cdf(-d1) + K * math.exp(-r * dt) * norm.cdf(-d2)
 
 
-def monte_carlo_call_option_price(S, K, r, sigma, T, t, sims=1000):
-    dt = T - t
-    if is_almost_zero(dt):
-        zero_or_max(K - S)
+def monte_carlo_call_option_price_gen(sims=5000):
+    def monte_carlo_call_option_price(S, K, r, sigma, T, t):
+        dt = T - t
+        if is_almost_zero(dt):
+            zero_or_max(K - S)
 
-    dt_sq = math.sqrt(dt)
+        dt_sq = math.sqrt(dt)
 
-    R = (r - 0.5 * math.pow(sigma, 2)) * dt
-    SD = sigma * dt_sq
+        R = (r - 0.5 * math.pow(sigma, 2)) * dt
+        SD = sigma * dt_sq
 
-    sum_payoffs = 0
-    for i in range(sims):
-        S_T = S * math.exp(R + SD * np.random.normal())
-        sum_payoffs += zero_or_max(S_T - K)
+        sum_payoffs = 0
+        for i in range(sims):
+            S_T = S * math.exp(R + SD * np.random.normal())
+            sum_payoffs += zero_or_max(S_T - K)
 
-    return math.exp(-r * dt) * (sum_payoffs / sims)
+        return math.exp(-r * dt) * (sum_payoffs / sims)
+
+    return monte_carlo_call_option_price
+
+
+def binomial_call_option_price_gen(steps=100):
+    def binomial_call_option_price(S, K, r, sigma, T, t):
+        dt = T - t
+        if is_almost_zero(dt):
+            zero_or_max(K - S)
+
+        R = math.exp(r * (dt / steps))
+        Rinv = 1 / R
+        u = math.exp(sigma * math.sqrt(dt / steps))
+        d = 1 / u
+        p_up = (R - d) / (u - d)
+        p_down = 1 - p_up
+
+        prices = [0.0] * (steps + 1)
+        prices[0] = S * pow(d, steps)
+        uu = u * u
+        for i in range(1, steps + 1):
+            prices[i] = uu * prices[i - 1]
+
+        call_values = [0.0] * (steps + 1)
+        for i in range(steps + 1):
+            call_values[i] = zero_or_max(prices[i] - K)
+
+        for step in range(steps - 1, -1, -1):
+            for i in range(step + 1):
+                call_values[i] = (p_up * call_values[i + 1] + p_down * call_values[i]) * Rinv
+                prices[i] = d * prices[i + 1]
+                call_values[i] = max(call_values[i], prices[i] - K)
+
+        return call_values[0]
+
+    return binomial_call_option_price
 
 
 def lower_put_option_price(S, K, r=0, sigma=0, T=1, t=0):
